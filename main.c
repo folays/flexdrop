@@ -8,8 +8,8 @@
 
 #include "kresolv.h"
 
-unsigned int flexdrop_min_mb = 0; /* minimum amount of MB that should always be free */
-module_param_named(setuid, frexdrop_min_mb, uint, 0644);
+static unsigned int flexdrop_min_mb = 0; /* minimum amount of MB that should always be free */
+module_param_named(setuid, flexdrop_min_mb, uint, 0644);
 
 /* This module does the equivalent of a "echo 3 > /proc/sys/vm/drop_caches" until enough
  *  memory is available (in the output of "free -m").
@@ -23,13 +23,14 @@ static atomic_t flexdrop_wakeup;
 static void flexdrop_check_memory(void)
 {
   struct sysinfo meminfo;
+  struct shrink_control shrink;
+  int nr_objects;
 
   si_meminfo(&meminfo);
   printk(KERN_INFO "flexdrop freeram %lu\n", meminfo.freeram * meminfo.mem_unit);
 
   /* from drop_slab() in linux/fs/drop_cache.c */
-  struct shrink_control shrink = { .gfp_mask = GFP_KERNEL, };
-  int nr_objects;
+  shrink = (struct shrink_control){ .gfp_mask = GFP_KERNEL, };
   do {
     nr_objects = f_shrink_slab(&shrink, 1000, 1000);
     printk(KERN_INFO " dropped %d nr_objects\n", nr_objects);

@@ -32,6 +32,7 @@ __attribute__((section("__versions"))) = {
 	{ 0x5c8b5ce8, "prepare_to_wait" },
 	{ 0xfa66f77c, "finish_wait" },
 	{ 0xe5d95985, "param_ops_ulong" },
+	{ 0x6d044c26, "param_ops_uint" },
 };
 
 static const char __module_depends[]
@@ -40,4 +41,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "1E2739A7CDC5EDE2E5C8336");
+MODULE_INFO(srcversion, "B58D69CE36A34089479AD51");

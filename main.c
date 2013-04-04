@@ -38,7 +38,7 @@ static void flexdrop_check_memory(void)
 
   if (free_mb >= flexdrop_min_mb)
     {
-      DEBUG printk(KERN_INFO "enough memory is free!\n");
+      DEBUG printk(KERN_INFO "enough memory is already free!\n");
       return;
     }
 
@@ -46,14 +46,24 @@ static void flexdrop_check_memory(void)
     /* f_iterate_supers(f_drop_pagecache_sb, NULL); */
   }
   {
+    int nr_to_shrink = 10;
+
     for (i = 0; i < 10; ++i)
       {
 	/* from drop_slab() in linux/fs/drop_cache.c */
 	shrink = (struct shrink_control){ .gfp_mask = GFP_KERNEL, };
-	nr_objects = f_shrink_slab(&shrink, 1000, 1000);
+	nr_objects = f_shrink_slab(&shrink, nr_to_shrink, nr_to_shrink);
 	DEBUG printk(KERN_INFO " dropped %d nr_objects\n", nr_objects);
 	if (nr_objects <= 0)
 	  break;
+
+	si_meminfo(&meminfo);
+	free_mb = meminfo.freeram * meminfo.mem_unit / 1024 / 1024;
+	if (free_mb >= flexdrop_min_mb)
+	  break;
+
+	if (nr_to_shrink < 1000)
+	  nr_to_shrink *= 1000;
       }
   }
 }

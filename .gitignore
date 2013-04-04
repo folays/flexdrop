@@ -1,0 +1,5 @@
+flexdrop.mod.o flexdrop.o main.o krevalid.o
+*.cmd
+Module.symvers
+modules.order
+.tmp_versions

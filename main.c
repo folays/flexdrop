@@ -8,8 +8,12 @@
 
 #include "kresolv.h"
 
+#define DEBUG if(flexfs_verbose >= 1)
+
+static unsigned int flexfs_verbose = 0;
+module_param_named(verbose, flexfs_verbose, uint, 0644);
 static unsigned int flexdrop_min_mb = 0; /* minimum amount of MB that should always be free */
-module_param_named(setuid, flexdrop_min_mb, uint, 0644);
+module_param_named(min_mb, flexdrop_min_mb, uint, 0644);
 
 /* This module does the equivalent of a "echo 3 > /proc/sys/vm/drop_caches" until enough
  *  memory is available (in the output of "free -m").
@@ -25,17 +29,33 @@ static void flexdrop_check_memory(void)
   struct sysinfo meminfo;
   struct shrink_control shrink;
   int nr_objects;
+  unsigned long free_mb;
+  int i;
 
   si_meminfo(&meminfo);
-  printk(KERN_INFO "flexdrop freeram %lu\n", meminfo.freeram * meminfo.mem_unit);
+  free_mb = meminfo.freeram * meminfo.mem_unit / 1024 / 1024;
+  DEBUG printk(KERN_INFO "flexdrop freeram %lu MB (should be at least %u)\n", free_mb, flexdrop_min_mb);
 
-  /* from drop_slab() in linux/fs/drop_cache.c */
-  shrink = (struct shrink_control){ .gfp_mask = GFP_KERNEL, };
-  do {
-    nr_objects = f_shrink_slab(&shrink, 1000, 1000);
-    printk(KERN_INFO " dropped %d nr_objects\n", nr_objects);
-    break;
-  } while (nr_objects > 0);
+  if (free_mb >= flexdrop_min_mb)
+    {
+      DEBUG printk(KERN_INFO "enough memory is free!\n");
+      return;
+    }
+
+  {
+    /* f_iterate_supers(f_drop_pagecache_sb, NULL); */
+  }
+  {
+    for (i = 0; i < 10; ++i)
+      {
+	/* from drop_slab() in linux/fs/drop_cache.c */
+	shrink = (struct shrink_control){ .gfp_mask = GFP_KERNEL, };
+	nr_objects = f_shrink_slab(&shrink, 1000, 1000);
+	DEBUG printk(KERN_INFO " dropped %d nr_objects\n", nr_objects);
+	if (nr_objects <= 0)
+	  break;
+      }
+  }
 }
 
 static int flexdrop_thread(void *data)
@@ -48,7 +68,7 @@ static int flexdrop_thread(void *data)
     {
       /* msleep(1000); */
       wait_event_timeout(flexdrop_waitqueue, atomic_read(&flexdrop_wakeup), jif);
-      printk(KERN_INFO "flexdrop thread loop!\n");
+      DEBUG printk(KERN_INFO "flexdrop thread loop!\n");
       if (atomic_read(&flexdrop_wakeup))
 	{
 	  atomic_dec(&flexdrop_wakeup);
@@ -68,8 +88,8 @@ static int __init drop_start(void)
   printk(KERN_INFO "#########################################################################################\n");
   printk(KERN_INFO "###############################           COUCOU          ###############################\n");
   printk(KERN_INFO "#########################################################################################\n");
-  printk(KERN_INFO "Loading flexdrop module... All your memory are belong to us.\n\n");
-  printk(KERN_INFO "Hello world. I will happily free your memory when I have the feeling to do so.\n\n");
+  printk(KERN_INFO "Loading flexdrop module... All your memory are belong to us.\n");
+  printk(KERN_INFO "Hello world. I will happily free your memory when I have the feeling to do so.\n");
   kresolv_init();
 
   task = kthread_create(flexdrop_thread, NULL, "flexdrop");

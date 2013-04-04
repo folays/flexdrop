@@ -1,4 +1,7 @@
-flexdrop.mod.o flexdrop.o main.o krevalid.o
+flexdrop.mod.o
+flexdrop.o
+main.o
+kresolv.o
 *.cmd
 Module.symvers
 modules.order

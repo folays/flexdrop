@@ -12,7 +12,9 @@ Beware:
 
 Some functions needed to do the equivalent of a "echo 3 > /proc/sys/vm/drop_cache" but at a quite pace
  are not exported by the Linux Kernel module API.
-The insert.pl script will resolve some static function address from /proc/kallsyms and will pass them to
- the flexdrop kernel module parameters.
+To use those needed functions, flexdrop will resolve some function symbols normally private using the
+ kernel function "kallsyms_lookup_name" which is also not exported.
+To use "kallsyms_lookup_name", the insert.pl script will resolve it's address from /proc/kallsyms and
+ will pass it to the flexdrop kernel module parameters...
 
 The remove (rmmod flexdrop) is safe, ie. it will unload cleanly.
